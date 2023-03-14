@@ -1,53 +1,82 @@
 "use strict";
 
-const logout = new LogoutButton();
-const ratesBoard = new RatesBoard();
+class HomePageManager {
+  constructor() {
+    this._intId = null;
+    this.logout = new LogoutButton();
+    this.ratesBoard = new RatesBoard();
+    this.moneyManager = new MoneyManager();
+  }
 
-logout.action = function () {
-  ApiConnector.logout((responseBody) => {
-    if (responseBody.success) {
-      stopUpdateExchangeRates();
-      location.reload();
-    } else {
-      console.error("Ошибка: ", responseBody.error);
+  get intId() {
+    return this._intId;
+  }
+
+  set intId(value) {
+    this._intId = value;
+  }
+
+  init() {
+    this.setLogoutCallback();
+    this.setCurrentUserData();
+    this.startUpdateExchangeRates();
+  }
+
+  setLogoutCallback() {
+    const bindingFunc = this.stopUpdateExchangeRates.bind(this);
+    this.logout.action = function () {
+      ApiConnector.logout((responseBody) => {
+        if (responseBody.success) {
+          bindingFunc();
+          location.reload();
+        } else {
+          console.error("Ошибка: ", responseBody.error);
+        }
+      });
+    }    
+  }
+
+  setCurrentUserData() {
+    ApiConnector.current((responseBody) => {
+      if (responseBody.success) {
+        ProfileWidget.showProfile(responseBody.data);
+      } else {
+        console.error("Ошибка: ", responseBody.error);
+      }
+    });
+  }
+
+  getExchangeRates() {
+    ApiConnector.getStocks((responseBody) => {
+      if (responseBody.success) {
+        this.ratesBoard.clearTable();
+        this.ratesBoard.fillTable(responseBody.data);
+      } else {
+        console.error("Ошибка: ", responseBody.error);
+      }
+    });
+  }
+
+  startUpdateExchangeRates() {
+    if (this.intId !== null) {
+      return;
     }
-  });
-}
-
-ApiConnector.current((responseBody) => {
-  if (responseBody.success) {
-    ProfileWidget.showProfile(responseBody.data);
-  } else {
-    console.error("Ошибка: ", responseBody.error);
+    this.getExchangeRates();
+    this.intId = setInterval(() => this.getExchangeRates(), 60000);
   }
-});
-
-function getExchangeRates() {
-  ApiConnector.getStocks((responseBody) => {
-    if (responseBody.success) {
-      ratesBoard.clearTable();
-      ratesBoard.fillTable(responseBody.data);
-    } else {
-      console.error("Ошибка: ", responseBody.error);
+  
+  stopUpdateExchangeRates() {
+    if (this.intId !== null) {
+      clearInterval(this.intId);
+      this.intId = null;
     }
-  });
-}
-
-let intId = null;
-
-function startUpdateExchangeRates() {
-  if (intId !== null) {
-    return;
   }
-  getExchangeRates();
-  intId = setInterval(getExchangeRates, 60000);
+
 }
 
-function stopUpdateExchangeRates() {
-  if (intId !== null) {
-    clearInterval(intId);
-    intId = null;
-  }
-}
+const homePageManager = new HomePageManager();
+homePageManager.init();
 
-startUpdateExchangeRates();
+
+
+
