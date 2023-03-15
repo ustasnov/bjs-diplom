@@ -25,14 +25,18 @@ class HomePageManager {
     this.setConversionMoneyCallback();
     this.setSendMoneyCallback();
     this.setFavoritesList();
+    this.setAddUserCallback();
+    this.setRemoveUserCallback();
   }
 
+  /* Выход из личного кабинета */
+
   setLogoutCallback() {
-    const bindingFunc = this.stopUpdateExchangeRates.bind(this);
+    const stopUpdate = this.stopUpdateExchangeRates.bind(this);
     this.logout.action = function () {
       ApiConnector.logout((responseBody) => {
         if (responseBody.success) {
-          bindingFunc();
+          stopUpdate();
           location.reload();
         } else {
           console.error("Ошибка: ", responseBody.error);
@@ -40,6 +44,8 @@ class HomePageManager {
       });
     }
   }
+
+  /* Получение информации о пользователе */
 
   setCurrentUserData() {
     ApiConnector.current((responseBody) => {
@@ -50,6 +56,8 @@ class HomePageManager {
       }
     });
   }
+
+  /* Получение текущих курсов валют */
 
   getExchangeRates() {
     ApiConnector.getStocks((responseBody) => {
@@ -77,47 +85,51 @@ class HomePageManager {
     }
   }
 
+  /* Операции с деньгами */
+
   setAddMoneyCallback() {
-    const bindingFunc = this.moneyManager.setMessage.bind(this.moneyManager);
+    const setMessage = this.moneyManager.setMessage.bind(this.moneyManager);
     this.moneyManager.addMoneyCallback = function (data) {
       ApiConnector.addMoney(data, (responseBody) => {
         if (responseBody.success) {
           ProfileWidget.showProfile(responseBody.data);
-          bindingFunc(true, "Баланс успешно пополнен.");
+          setMessage(true, "Баланс успешно пополнен.");
         } else {
-          bindingFunc(false, responseBody.error);
+          setMessage(false, responseBody.error);
         }
       });
     }
   }
 
   setConversionMoneyCallback() {
-    const bindingFunc = this.moneyManager.setMessage.bind(this.moneyManager);
+    const setMessage = this.moneyManager.setMessage.bind(this.moneyManager);
     this.moneyManager.conversionMoneyCallback = function (data) {
       ApiConnector.convertMoney(data, (responseBody) => {
         if (responseBody.success) {
           ProfileWidget.showProfile(responseBody.data);
-          bindingFunc(true, "Конвертация выполнена успешно.");
+          setMessage(true, "Конвертация успешно выполнена.");
         } else {
-          bindingFunc(false, responseBody.error);
+          setMessage(false, responseBody.error);
         }
       });
     }
   }
 
   setSendMoneyCallback() {
-    const bindingFunc = this.moneyManager.setMessage.bind(this.moneyManager);
+    const setMessage = this.moneyManager.setMessage.bind(this.moneyManager);
     this.moneyManager.sendMoneyCallback = function (data) {
       ApiConnector.transferMoney(data, (responseBody) => {
         if (responseBody.success) {
           ProfileWidget.showProfile(responseBody.data);
-          bindingFunc(true, "Перевод валюты упешно выполнен.");
+          setMessage(true, "Перевод валюты упешно выполнен.");
         } else {
-          bindingFunc(false, responseBody.error);
+          setMessage(false, responseBody.error);
         }
       });
     }
   }
+
+  /* Работа с избранным */
 
   setFavoritesList() {
     ApiConnector.getFavorites((responseBody) => {
@@ -131,11 +143,39 @@ class HomePageManager {
     });
   }
 
+  setAddUserCallback() {
+    const setMessage = this.moneyManager.setMessage.bind(this.moneyManager);
+    const upgateFavorites = this.setFavoritesList.bind(this);
+    this.favoritesWidget.addUserCallback = function (data) {
+      ApiConnector.addUserToFavorites(data, (responseBody) => {
+        if (responseBody.success) {
+          upgateFavorites();
+          setMessage(true, `Пользователь ${data.name} успешно добавлен в адресную книгу`);
+        } else {
+          setMessage(false, responseBody.error);
+        }
+      });
+    }
+  }
+
+  setRemoveUserCallback() {
+    const setMessage = this.moneyManager.setMessage.bind(this.moneyManager);
+    const upgateFavorites = this.setFavoritesList.bind(this);
+    this.favoritesWidget.removeUserCallback = function (data) {
+      ApiConnector.removeUserFromFavorites(data, (responseBody) => {
+        if (responseBody.success) {
+          upgateFavorites();
+          setMessage(true, `Пользователь c id=${data} удален из адресной книги`);
+        } else {
+          setMessage(false, responseBody.error);
+        }
+      });
+    }
+  }
+
 }
 
-const homePageManager = new HomePageManager();
-homePageManager.init();
-
+new HomePageManager().init();
 
 
 
