@@ -121,7 +121,7 @@ class HomePageManager {
       ApiConnector.transferMoney(data, (responseBody) => {
         if (responseBody.success) {
           ProfileWidget.showProfile(responseBody.data);
-          setMessage(true, "Перевод валюты упешно выполнен.");
+          setMessage(true, "Перевод денег уcпешно выполнен.");
         } else {
           setMessage(false, responseBody.error);
         }
@@ -176,6 +176,3 @@ class HomePageManager {
 }
 
 new HomePageManager().init();
-
-
-
